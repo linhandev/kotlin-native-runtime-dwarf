@@ -28,6 +28,32 @@ Always ask whether app wiring is needed; if yes, ask for `/application/repo`.
 5. Build full `crossDist` and re-validate.
 6. If requested, wire `/application/repo` and validate app binary.
 
+## Mandatory execution checklist
+
+Run all items in order and do not skip validation:
+
+1. **Patch check**
+   - Confirm `IrToBitcode.kt` has no `llvmFunction.scope(0, ...)` fallback.
+   - Confirm the private `LlvmCallable.scope(startLine: Int, ...)` helper is absent.
+2. **Runtime debug flag**
+   - Ensure `/kotlin/repo/local.properties` contains:
+     `kotlin.native.isNativeRuntimeDebugInfoEnabled=true`
+3. **Compiler smoke rebuild**
+   - Run `:kotlin-native:backend.native:compileKotlin`.
+4. **Target dist rebuild**
+   - Run target `CrossDist` + `PlatformLibs` tasks.
+5. **Konanc smoke binary**
+   - Build a minimal sample with `-g` and `-Xbinary=stripDebugInfoFromNativeLibs=false`.
+6. **DWARF verification**
+   - Probe for `Exceptions.cpp`.
+   - Probe compile unit count.
+7. **(Optional) App wiring**
+   - Add app linker flag + `kotlin.native.home`.
+   - Rebuild app.
+   - Validate final app artifact for runtime C++ entries.
+8. **Final report**
+   - Report exact commands executed, artifact path checked, and pass/fail per probe.
+
 ## Agent loop guidance
 
 When running this skill, create and maintain a detailed todo list.
@@ -37,6 +63,18 @@ When running this skill, create and maintain a detailed todo list.
 - Add explicit validation subtasks (CU count probe and `Exceptions.cpp` probe).
 - If any step fails, add diagnosis/fix subtasks before resuming the main flow.
 - Mark optional branches as completed or skipped with a reason (for example app wiring not requested).
+
+## Output quality bar
+
+Final response should include:
+
+- What was changed (patch/flags/wiring).
+- What was built (task names).
+- Exact artifact path verified.
+- Probe output summary:
+  - `Exceptions.cpp`: found/not found.
+  - compile units count (integer).
+- Any warnings/errors seen (for example `invalid range list offset`) and whether they block debugging.
 
 ## Details
 
